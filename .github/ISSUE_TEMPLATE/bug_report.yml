@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible problem with the generator.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for helping improve the generator. Use synthetic data only.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the observed and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Choose Contact
+        2. Enter synthetic details
+        3. Download the QR
+        4. Scan it with...
+    validations:
+      required: true
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Workflow
+      options:
+        - Contact QR or VCF
+        - Event QR or ICS
+        - General interface
+        - Build or deployment
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Device, operating system, browser, and scanner app
+      placeholder: iPhone 17, iOS 20, Safari, Camera
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Do not include real contact information, private event information, or secrets.

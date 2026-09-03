@@ -1,159 +1,259 @@
-import React, { useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
+import {
+  AlertTriangle,
+  AlignLeft,
+  CalendarCheck,
+  CheckCircle2,
+  Clock,
+  Download,
+  FileDown,
+  Image as ImageIcon,
+  MapPin,
+  QrCode,
+  ShieldCheck,
+  Smartphone,
+} from 'lucide-react';
 import { ContactData, EventData, QrMode } from '../types';
-import { generateVCardString } from '../utils/vcardHelper';
 import { generateVCalendarString } from '../utils/calendarHelper';
-import { Download, Share2, Smartphone, ShieldCheck, CalendarCheck, MapPin, Clock, QrCode, AlignLeft } from 'lucide-react';
+import {
+  getByteLength,
+  MAX_QR_BYTES,
+  QR_WARNING_BYTES,
+  validateContact,
+  validateEvent,
+} from '../utils/validation';
+import { generateVCardString } from '../utils/vcardHelper';
 
 interface QRCardProps {
   data: ContactData | EventData;
   mode: QrMode;
 }
 
-const QRCard: React.FC<QRCardProps> = ({ data, mode }) => {
-  const qrRef = useRef<HTMLDivElement>(null);
-  
-  let qrString = '';
-  let filename = 'qrcode';
-  
-  if (mode === 'contact') {
-    qrString = generateVCardString(data as ContactData);
-    filename = `${(data as ContactData).firstName || 'contact'}-qrcode`;
-  } else {
-    qrString = generateVCalendarString(data as EventData);
-    filename = `${(data as EventData).title || 'event'}-qrcode`;
-  }
-  
-  const hasData = mode === 'contact'
-    ? Object.values(data).some(val => typeof val === 'string' && val.trim().length > 0)
-    : (data as EventData).title.length > 0 || (data as EventData).startTime.length > 0;
+const sanitizeFilename = (value: string, fallback: string) => {
+  const filename = value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
 
-  const downloadQR = () => {
-    const svg = qrRef.current?.querySelector('svg');
-    if (!svg) return;
-    
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    
-    img.onload = () => {
-      canvas.width = img.width + 40; 
-      canvas.height = img.height + 40;
-      if (ctx) {
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 20, 20);
-        const pngFile = canvas.toDataURL("image/png");
-        
-        const downloadLink = document.createElement("a");
-        downloadLink.download = `${filename}.png`;
-        downloadLink.href = pngFile;
-        downloadLink.click();
-      }
-    };
-    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+  return filename || fallback;
+};
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+};
+
+const QRCard = ({ data, mode }: QRCardProps) => {
+  const qrRef = useRef<HTMLDivElement>(null);
+  const [statusMessage, setStatusMessage] = useState('');
+
+  const output = useMemo(() => {
+    const errors = mode === 'contact'
+      ? validateContact(data as ContactData)
+      : validateEvent(data as EventData);
+
+    if (errors.length) return { payload: '', bytes: 0, errors };
+
+    try {
+      const payload = mode === 'contact'
+        ? generateVCardString(data as ContactData)
+        : generateVCalendarString(data as EventData);
+      const bytes = getByteLength(payload);
+      const sizeErrors = bytes > MAX_QR_BYTES
+        ? ['This QR code contains too much data. Shorten the notes, description, or URL.']
+        : [];
+
+      return { payload, bytes, errors: sizeErrors };
+    } catch (error) {
+      return {
+        payload: '',
+        bytes: 0,
+        errors: [error instanceof Error ? error.message : 'The QR code could not be generated.'],
+      };
+    }
+  }, [data, mode]);
+
+  const isReady = output.errors.length === 0 && Boolean(output.payload);
+  const isDense = isReady && output.bytes > QR_WARNING_BYTES;
+
+  const basename = mode === 'contact'
+    ? sanitizeFilename(
+      [(data as ContactData).firstName, (data as ContactData).lastName].filter(Boolean).join(' ')
+        || (data as ContactData).organization,
+      'contact',
+    )
+    : sanitizeFilename((data as EventData).title, 'event');
+
+  const announceDownload = (message: string) => {
+    setStatusMessage(message);
+    window.setTimeout(() => setStatusMessage(''), 3_000);
   };
 
-  const renderContactPreview = (d: ContactData) => {
-    const fullName = `${d.firstName} ${d.lastName}`.trim() || 'Jane Vaquero';
-    const role = d.title || 'Title';
-    let company = 'UTRGV';
-    if (d.organization && d.organization.trim()) {
-      company = d.organization.trim().toUpperCase().startsWith('UTRGV')
-        ? d.organization.trim()
-        : `UTRGV - ${d.organization.trim()}`;
-    }
+  const buildExportSvg = () => {
+    const source = qrRef.current?.querySelector('svg');
+    if (!source) return null;
+
+    const viewBox = source.getAttribute('viewBox')?.split(/\s+/).map(Number) || [0, 0, 256, 256];
+    const [minX, minY, width, height] = viewBox;
+    const padding = Math.max(width, height) * 0.1;
+    const namespace = 'http://www.w3.org/2000/svg';
+    const wrapper = document.createElementNS(namespace, 'svg');
+
+    wrapper.setAttribute('xmlns', namespace);
+    wrapper.setAttribute('viewBox', `${minX - padding} ${minY - padding} ${width + padding * 2} ${height + padding * 2}`);
+    wrapper.setAttribute('width', '1024');
+    wrapper.setAttribute('height', '1024');
+    wrapper.setAttribute('shape-rendering', 'crispEdges');
+
+    const background = document.createElementNS(namespace, 'rect');
+    background.setAttribute('x', String(minX - padding));
+    background.setAttribute('y', String(minY - padding));
+    background.setAttribute('width', String(width + padding * 2));
+    background.setAttribute('height', String(height + padding * 2));
+    background.setAttribute('fill', '#ffffff');
+    wrapper.appendChild(background);
+
+    [...source.childNodes].forEach((child) => wrapper.appendChild(child.cloneNode(true)));
+    return new XMLSerializer().serializeToString(wrapper);
+  };
+
+  const downloadQrSvg = () => {
+    const svg = buildExportSvg();
+    if (!svg) return;
+    downloadBlob(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), `${basename}-qr.svg`);
+    announceDownload('QR SVG downloaded.');
+  };
+
+  const downloadQrPng = () => {
+    const svg = buildExportSvg();
+    if (!svg) return;
+
+    const sourceUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+    const image = new Image();
+
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 1200;
+      const context = canvas.getContext('2d');
+
+      if (!context) {
+        URL.revokeObjectURL(sourceUrl);
+        return;
+      }
+
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.imageSmoothingEnabled = false;
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          downloadBlob(blob, `${basename}-qr.png`);
+          announceDownload('QR PNG downloaded.');
+        }
+        URL.revokeObjectURL(sourceUrl);
+      }, 'image/png');
+    };
+
+    image.onerror = () => URL.revokeObjectURL(sourceUrl);
+    image.src = sourceUrl;
+  };
+
+  const downloadDataFile = () => {
+    if (!isReady) return;
+
+    const isContact = mode === 'contact';
+    const extension = isContact ? 'vcf' : 'ics';
+    const mime = isContact ? 'text/vcard;charset=utf-8' : 'text/calendar;charset=utf-8';
+    downloadBlob(new Blob([output.payload], { type: mime }), `${basename}.${extension}`);
+    announceDownload(`${isContact ? 'Contact' : 'Calendar'} file downloaded.`);
+  };
+
+  const renderContactPreview = (contact: ContactData) => {
+    const fullName = [contact.firstName, contact.lastName].filter(Boolean).join(' ') || 'Contact name';
+    const role = contact.title || 'Job title';
+    const company = contact.organization || 'Organization';
 
     return (
-      <div className="group w-full aspect-[1.75/1] transition-transform duration-500 hover:scale-[1.02] hover:-rotate-1">
-        <div className="w-full h-full bg-gradient-to-br from-brand-600 via-brand-500 to-brand-700 rounded-2xl shadow-2xl shadow-brand-500/30 overflow-hidden relative text-white p-6 md:p-8 flex flex-col justify-between border-t border-brand-400/50 backdrop-blur-sm">
-          {/* Decorative Background */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-[0.07] rounded-full blur-[60px] -mr-16 -mt-16 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand-900 opacity-30 rounded-full blur-[40px] -ml-10 -mb-10 pointer-events-none"></div>
-          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.07] mix-blend-overlay pointer-events-none"></div>
-          
+      <div aria-hidden="true" className="w-full transition-transform duration-300 motion-safe:hover:-rotate-1 motion-safe:hover:scale-[1.01]">
+        <div className="relative flex aspect-[1.75/1] w-full flex-col justify-between overflow-hidden rounded-2xl border border-brand-400/50 bg-gradient-to-br from-brand-700 via-brand-600 to-brand-800 p-6 text-white shadow-2xl shadow-brand-600/25 sm:p-8">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white opacity-[0.08] blur-[60px]" />
+          <div className="pointer-events-none absolute -bottom-10 -left-10 h-48 w-48 rounded-full bg-brand-950 opacity-30 blur-[40px]" />
+
           <div className="relative z-10">
-            <div className="flex justify-between items-start">
-               <div>
-                  <h2 className="text-2xl md:text-3xl font-bold tracking-tight truncate drop-shadow-sm">{fullName}</h2>
-                  <div className="text-brand-50 font-medium text-sm md:text-base mt-1 flex flex-col opacity-90">
-                    <span className="truncate">{role}</span>
-                  </div>
-               </div>
-               <div className="opacity-90 bg-white/10 p-2 rounded-lg backdrop-blur-md border border-white/10">
-                  <ShieldCheck size={28} strokeWidth={1.5} />
-               </div>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h3 className="truncate text-2xl font-bold tracking-tight drop-shadow-sm sm:text-3xl">{fullName}</h3>
+                <p className="mt-1 truncate text-sm font-medium text-brand-50 opacity-90 sm:text-base">{role}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-white/10 p-2">
+                <ShieldCheck size={28} strokeWidth={1.5} />
+              </div>
             </div>
-            <span className="text-brand-100 font-medium text-xs tracking-wide uppercase mt-4 block">{company}</span>
+            <p className="mt-4 truncate text-xs font-semibold uppercase tracking-wider text-brand-100">{company}</p>
           </div>
 
-          <div className="relative z-10 space-y-1.5 text-xs md:text-sm text-white/90">
-             {d.email && (
-               <div className="flex items-center gap-3 truncate group-hover:text-white transition-colors">
-                 <span className="opacity-60 uppercase text-[10px] tracking-wider w-4 font-bold">Em</span> 
-                 <span className="font-light">{d.email}</span>
-               </div>
-             )}
-             {(d.mobile || d.phone) && (
-               <div className="flex items-center gap-3 truncate group-hover:text-white transition-colors">
-                 <span className="opacity-60 uppercase text-[10px] tracking-wider w-4 font-bold">Ph</span> 
-                 <span className="font-light">{d.mobile || d.phone}</span>
-               </div>
-             )}
+          <div className="relative z-10 space-y-1.5 text-xs text-white/90 sm:text-sm">
+            {contact.email && <p className="truncate"><span className="mr-3 text-[10px] font-bold uppercase tracking-wider opacity-60">Email</span>{contact.email}</p>}
+            {(contact.mobile || contact.phone) && <p className="truncate"><span className="mr-3 text-[10px] font-bold uppercase tracking-wider opacity-60">Phone</span>{contact.mobile || contact.phone}</p>}
           </div>
         </div>
       </div>
     );
   };
 
-  const renderEventPreview = (d: EventData) => {
-    const dateObj = d.startTime ? new Date(d.startTime) : new Date();
-    const month = dateObj.toLocaleString('default', { month: 'short' }).toUpperCase();
-    const day = dateObj.getDate();
-    const time = d.startTime ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+  const renderEventPreview = (event: EventData) => {
+    const [date = '', time = ''] = event.startTime.split('T');
+    const safeDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00`) : new Date();
+    const month = safeDate.toLocaleString(undefined, { month: 'short' }).toUpperCase();
+    const day = safeDate.getDate();
+    const displayTime = event.allDay
+      ? 'All day'
+      : time
+        ? new Date(`2000-01-01T${time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+        : 'Time';
 
     return (
-      <div className="group w-full aspect-[1.75/1] transition-transform duration-500 hover:scale-[1.02] hover:rotate-1">
-        <div className="w-full h-full bg-white rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden relative flex flex-col border border-slate-100">
-          <div className="h-2 bg-brand-500 w-full"></div>
-          
-          <div className="flex-1 p-6 flex flex-col relative">
-             {/* Ticket Notches */}
-             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-slate-50 border-r border-slate-200 rounded-r-full shadow-inner"></div>
-             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-8 bg-slate-50 border-l border-slate-200 rounded-l-full shadow-inner"></div>
+      <div aria-hidden="true" className="w-full transition-transform duration-300 motion-safe:hover:rotate-1 motion-safe:hover:scale-[1.01]">
+        <div className="flex aspect-[1.75/1] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+          <div className="h-2 w-full bg-brand-600" />
+          <div className="relative flex flex-1 flex-col p-5 sm:p-6">
+            <div className="flex items-start gap-5 pl-1">
+              <div className="flex min-w-[68px] flex-col items-center justify-center rounded-xl border border-brand-100 bg-brand-50 p-3 text-brand-700">
+                <span className="text-xs font-bold tracking-widest">{month}</span>
+                <span className="mt-1 text-3xl font-black leading-none">{day}</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="line-clamp-2 text-xl font-bold leading-tight text-slate-900">{event.title || 'Event title'}</h3>
+                <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <Clock size={14} className="text-brand-600" />
+                  {displayTime}
+                </p>
+              </div>
+            </div>
 
-             <div className="flex justify-between items-start gap-5 pl-2">
-                <div className="flex flex-col items-center justify-center bg-brand-50 text-brand-600 rounded-xl p-3 min-w-[70px] border border-brand-100 shadow-sm">
-                   <span className="text-xs font-bold tracking-widest">{month}</span>
-                   <span className="text-3xl font-black leading-none mt-1">{day}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                   <h2 className="text-xl font-bold text-slate-800 leading-tight line-clamp-2 group-hover:text-brand-600 transition-colors">
-                     {d.title || 'Event Title'}
-                   </h2>
-                   <div className="flex items-center gap-1.5 text-slate-500 text-xs mt-2 font-medium">
-                     <Clock size={14} className="text-brand-500" />
-                     <span>{time}</span>
-                   </div>
-                </div>
-             </div>
+            <div className="mt-4 flex min-h-0 flex-1 gap-2 pl-1">
+              <AlignLeft size={14} className="mt-1 shrink-0 text-slate-400" />
+              <p className="line-clamp-2 text-sm leading-relaxed text-slate-600">
+                {event.description || 'Add a short event description.'}
+              </p>
+            </div>
 
-             <div className="mt-5 pl-2 pr-2 flex-1">
-                 <div className="flex gap-2">
-                    <AlignLeft size={14} className="text-slate-400 mt-1 shrink-0" />
-                    <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-wrap line-clamp-3">
-                        {d.description || 'Add a description to your event details to see it previewed here. This space fits about three lines of text.'}
-                    </p>
-                 </div>
-             </div>
-
-             <div className="border-t-2 border-dashed border-slate-100 pt-3 mt-auto pl-2">
-                <div className="flex items-start gap-2.5 text-slate-600 text-sm">
-                   <MapPin size={16} className="mt-0.5 text-brand-500 shrink-0" />
-                   <span className="truncate font-medium">{d.location || 'Location'}</span>
-                </div>
-             </div>
+            <div className="mt-auto border-t-2 border-dashed border-slate-100 pt-3 pl-1">
+              <p className="flex items-start gap-2.5 truncate text-sm font-medium text-slate-700">
+                <MapPin size={16} className="mt-0.5 shrink-0 text-brand-600" />
+                {event.location || 'Location'}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -161,66 +261,118 @@ const QRCard: React.FC<QRCardProps> = ({ data, mode }) => {
   };
 
   return (
-    <div className="sticky top-24 space-y-8 perspective-1000">
-      
-      {mode === 'contact' 
+    <aside className="space-y-7 lg:sticky lg:top-24" aria-label="Generated QR code and downloads">
+      {mode === 'contact'
         ? renderContactPreview(data as ContactData)
-        : renderEventPreview(data as EventData)
-      }
+        : renderEventPreview(data as EventData)}
 
-      {/* QR Code Section */}
-      <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-200/40 border border-white/50 p-8 flex flex-col items-center gap-6">
-        <div className="flex flex-col items-center gap-1.5 text-center">
-           <div className="flex items-center gap-2 text-brand-600 font-bold uppercase tracking-widest text-xs">
-             <Smartphone size={14} />
-             <span>Scan to {mode === 'contact' ? 'Connect' : 'RSVP'}</span>
-           </div>
-           <p className="text-sm text-slate-500 font-medium">Point your camera to save {mode === 'contact' ? 'contact' : 'event'}</p>
+      <section className="flex flex-col items-center gap-6 rounded-2xl border border-white/70 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur-md sm:p-8">
+        <div className="text-center">
+          <p className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest text-brand-700">
+            <Smartphone aria-hidden="true" size={14} />
+            Scan to save {mode === 'contact' ? 'contact' : 'event'}
+          </p>
+          <p className="mt-1.5 text-sm font-medium text-slate-600">Open a phone camera and point it at the code.</p>
         </div>
-        
-        <div ref={qrRef} className="relative group cursor-pointer transition-all duration-300 transform hover:scale-105">
-          <div className="absolute inset-0 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl blur-lg opacity-20 group-hover:opacity-40 transition-opacity"></div>
-          <div className="relative p-5 bg-white border border-slate-100 rounded-2xl shadow-sm">
-            {hasData ? (
-              <QRCode 
-                value={qrString} 
-                size={200} 
-                level="M"
-                fgColor="#0f172a" 
-                bgColor="#ffffff"
-              />
-            ) : (
-               <div className="w-[200px] h-[200px] bg-slate-50 rounded-lg flex flex-col items-center justify-center text-slate-300 gap-3 border-2 border-dashed border-slate-200">
-                 <div className="p-3 bg-white rounded-full shadow-sm">
-                   <QrCode size={28} className="text-slate-400" />
-                 </div>
-                 <span className="text-xs font-medium">Add info to generate</span>
-               </div>
-            )}
-          </div>
-          {/* Logo Overlay */}
-          {hasData && (
-             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-               <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md p-1">
-                 <div className="w-full h-full bg-brand-500 rounded-full flex items-center justify-center text-white font-bold text-[9px] tracking-tight">
-                   {mode === 'contact' ? 'vCard' : 'iCal'}
-                 </div>
-               </div>
-             </div>
+
+        <div
+          ref={qrRef}
+          className="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+          role={isReady ? 'img' : undefined}
+          aria-label={isReady ? `QR code containing a ${mode === 'contact' ? 'contact card' : 'calendar event'}` : undefined}
+        >
+          {isReady ? (
+            <QRCode
+              value={output.payload}
+              size={224}
+              level="M"
+              fgColor="#0f172a"
+              bgColor="#ffffff"
+              style={{ display: 'block', height: 'auto', maxWidth: '100%', width: '100%' }}
+            />
+          ) : (
+            <div className="flex aspect-square w-56 max-w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 text-slate-400">
+              <div className="rounded-full bg-white p-3 shadow-sm">
+                <QrCode aria-hidden="true" size={28} />
+              </div>
+              <span className="text-center text-xs font-medium">Complete the required details</span>
+            </div>
           )}
         </div>
 
-        <button 
-          onClick={downloadQR}
-          disabled={!hasData}
-          className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-slate-900 hover:bg-brand-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all duration-300 shadow-lg shadow-slate-900/10 hover:shadow-brand-500/25 hover:-translate-y-0.5"
-        >
-          <Download size={18} />
-          Save to Image
-        </button>
-      </div>
+        <div className="w-full" aria-live="polite">
+          {output.errors.length > 0 ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+              <p className="flex items-center gap-2 font-semibold">
+                <AlertTriangle aria-hidden="true" size={16} />
+                Almost ready
+              </p>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {output.errors.map((error) => <li key={error}>{error}</li>)}
+              </ul>
+            </div>
+          ) : isDense ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-950">
+              <p className="flex items-center gap-2 font-semibold">
+                <AlertTriangle aria-hidden="true" size={16} />
+                Dense QR code
+              </p>
+              <p className="mt-1">It should work, but shorter notes or descriptions will make it easier to scan from print.</p>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-sm font-medium text-emerald-800">
+              <CheckCircle2 aria-hidden="true" size={17} />
+              Ready to scan
+            </div>
+          )}
 
-    </div>
+          {isReady && (
+            <p className="mt-2 text-center text-xs text-slate-500">
+              {output.bytes.toLocaleString()} bytes. Test the final code before printing it.
+            </p>
+          )}
+        </div>
+
+        <div className="grid w-full grid-cols-1 gap-3">
+          <button
+            type="button"
+            onClick={downloadQrPng}
+            disabled={!isReady}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-3.5 font-bold text-white shadow-lg shadow-slate-900/10 transition hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/30 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+          >
+            <Download aria-hidden="true" size={18} />
+            Download QR PNG
+          </button>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={downloadQrSvg}
+              disabled={!isReady}
+              className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-brand-400 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <ImageIcon aria-hidden="true" size={17} />
+              QR SVG
+            </button>
+            <button
+              type="button"
+              onClick={downloadDataFile}
+              disabled={!isReady}
+              className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-brand-400 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              {mode === 'contact' ? <FileDown aria-hidden="true" size={17} /> : <CalendarCheck aria-hidden="true" size={17} />}
+              {mode === 'contact' ? 'Contact .vcf' : 'Calendar .ics'}
+            </button>
+          </div>
+        </div>
+
+        <p className="flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
+          <ShieldCheck aria-hidden="true" size={14} />
+          Generated locally. Nothing is uploaded.
+        </p>
+        <p className="sr-only" aria-live="polite">{statusMessage}</p>
+      </section>
+    </aside>
   );
 };
 

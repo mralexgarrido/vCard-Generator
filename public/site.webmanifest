@@ -1,0 +1,19 @@
+{
+  "name": "vCard & Event QR Code Generator",
+  "short_name": "vCard QR",
+  "description": "Create private contact and calendar event QR codes in your browser.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#b72706",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
+
