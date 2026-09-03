@@ -223,7 +223,8 @@ const App = () => {
                     ref={fileInputRef}
                     type="file"
                     accept=".vcf,.ics,text/vcard,text/calendar"
-                    className="sr-only"
+                    className="hidden"
+                    aria-hidden="true"
                     onChange={handleImport}
                     tabIndex={-1}
                   />
