@@ -32,6 +32,7 @@ describe('generator validation', () => {
       url: '',
       timezone: 'America/Chicago',
       allDay: false,
+      reminderMinutes: null,
       uid: 'test@example',
       createdAt: '2026-09-03T20:00:00.000Z',
     } satisfies EventData;
@@ -49,10 +50,29 @@ describe('generator validation', () => {
       url: '',
       timezone: 'UTC',
       allDay: true,
+      reminderMinutes: null,
       uid: 'test@example',
       createdAt: '2026-09-03T20:00:00.000Z',
     } satisfies EventData;
 
     expect(validateEvent(invalidEvent)).toContain('Enter a valid start date.');
+  });
+
+  it('rejects an out-of-range imported reminder', () => {
+    const invalidEvent = {
+      title: 'Test',
+      location: '',
+      startTime: '2026-09-17T14:30',
+      endTime: '2026-09-17T15:30',
+      description: '',
+      url: '',
+      timezone: 'UTC',
+      allDay: false,
+      reminderMinutes: -15,
+      uid: 'test@example',
+      createdAt: '2026-09-03T20:00:00.000Z',
+    } satisfies EventData;
+
+    expect(validateEvent(invalidEvent)).toContain('Choose a valid event reminder.');
   });
 });

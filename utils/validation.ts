@@ -49,6 +49,12 @@ export const validateEvent = (data: EventData): string[] => {
   if (!data.startTime) errors.push('Add a start date and time.');
   if (!data.endTime) errors.push('Add an end date and time.');
   if (!isValidWebUrl(data.url)) errors.push('Enter a valid event URL.');
+  if (
+    data.reminderMinutes !== null
+    && (!Number.isInteger(data.reminderMinutes) || data.reminderMinutes < 0 || data.reminderMinutes > 10_080)
+  ) {
+    errors.push('Choose a valid event reminder.');
+  }
 
   if (data.allDay) {
     if (data.startTime && !isValidDateOnly(data.startTime)) errors.push('Enter a valid start date.');

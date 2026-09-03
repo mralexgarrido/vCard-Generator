@@ -25,6 +25,7 @@ export interface EventData {
   url: string;
   timezone: string;
   allDay: boolean;
+  reminderMinutes: number | null;
   uid: string;
   createdAt: string;
 }
@@ -83,6 +84,7 @@ export const createInitialEventData = (): EventData => {
     url: '',
     timezone: getLocalTimezone(),
     allDay: false,
+    reminderMinutes: null,
     uid: createUid(),
     createdAt: new Date().toISOString(),
   };

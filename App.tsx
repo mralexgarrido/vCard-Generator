@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import {
+  ArrowDown,
   Calendar,
   ChevronDown,
+  FileUp,
   Github,
   LockKeyhole,
   QrCode,
+  RotateCcw,
   ShieldCheck,
   Trash2,
   UserPlus,
@@ -19,11 +22,33 @@ import {
   EventData,
   QrMode,
 } from './types';
+import { parseGeneratorFile } from './utils/importHelper';
+
+type ClearedData =
+  | { mode: 'contact'; data: ContactData }
+  | { mode: 'event'; data: EventData };
+
+interface Notice {
+  type: 'success' | 'error';
+  text: string;
+}
 
 const App = () => {
   const [mode, setMode] = useState<QrMode>('contact');
   const [contactData, setContactData] = useState<ContactData>(createInitialContactData);
   const [eventData, setEventData] = useState<EventData>(createInitialEventData);
+  const [lastCleared, setLastCleared] = useState<ClearedData | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+    const timeout = window.setTimeout(() => {
+      setNotice(null);
+      if (lastCleared) setLastCleared(null);
+    }, 8_000);
+    return () => window.clearTimeout(timeout);
+  }, [lastCleared, notice]);
 
   const handleContactChange = <K extends keyof ContactData>(field: K, value: ContactData[K]) => {
     setContactData((previous) => ({ ...previous, [field]: value }));
@@ -34,12 +59,50 @@ const App = () => {
   };
 
   const handleClear = () => {
-    if (!window.confirm(`Clear all ${mode === 'contact' ? 'contact' : 'event'} fields?`)) return;
-
     if (mode === 'contact') {
+      setLastCleared({ mode, data: { ...contactData } });
       setContactData(createInitialContactData());
     } else {
+      setLastCleared({ mode, data: { ...eventData } });
       setEventData(createInitialEventData());
+    }
+    setNotice({ type: 'success', text: `${mode === 'contact' ? 'Contact' : 'Event'} fields cleared.` });
+  };
+
+  const handleUndoClear = () => {
+    if (!lastCleared) return;
+    if (lastCleared.mode === 'contact') setContactData(lastCleared.data);
+    else setEventData(lastCleared.data);
+    setMode(lastCleared.mode);
+    setLastCleared(null);
+    setNotice({ type: 'success', text: `${lastCleared.mode === 'contact' ? 'Contact' : 'Event'} fields restored.` });
+  };
+
+  const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (file.size > 250_000) {
+      setNotice({ type: 'error', text: 'Choose a VCF or ICS file smaller than 250 KB.' });
+      return;
+    }
+
+    try {
+      const imported = parseGeneratorFile(await file.text());
+      if (imported.mode === 'contact' && imported.contact) setContactData(imported.contact);
+      if (imported.mode === 'event' && imported.event) setEventData(imported.event);
+      setMode(imported.mode);
+      setLastCleared(null);
+      setNotice({
+        type: 'success',
+        text: `${imported.mode === 'contact' ? 'Contact' : 'Event'} imported from ${file.name}.`,
+      });
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'The selected file could not be imported.',
+      });
     }
   };
 
@@ -116,7 +179,7 @@ const App = () => {
         </section>
 
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 xl:gap-16">
-          <section className="space-y-7 lg:col-span-7" aria-labelledby="form-heading">
+          <section id="details-form" className="scroll-mt-28 space-y-7 lg:col-span-7" aria-labelledby="form-heading">
             <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
               <div>
                 <h2 id="form-heading" className="text-3xl font-bold text-slate-950">
@@ -127,31 +190,60 @@ const App = () => {
                 </p>
               </div>
 
-              <div
-                className="flex rounded-xl border border-slate-200 bg-slate-100/80 p-1.5 shadow-inner"
-                role="tablist"
-                aria-label="Generator type"
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === 'contact'}
-                  onClick={() => setMode('contact')}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 sm:px-5 ${mode === 'contact' ? 'bg-white text-brand-700 shadow-md' : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'}`}
+              <div className="flex flex-col items-stretch gap-3 sm:items-end">
+                <div
+                  className="flex rounded-xl border border-slate-200 bg-slate-100/80 p-1.5 shadow-inner"
+                  role="tablist"
+                  aria-label="Generator type"
                 >
-                  <UserPlus aria-hidden="true" size={16} />
-                  Contact
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === 'event'}
-                  onClick={() => setMode('event')}
-                  className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 sm:px-5 ${mode === 'event' ? 'bg-white text-brand-700 shadow-md' : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'}`}
-                >
-                  <Calendar aria-hidden="true" size={16} />
-                  Event
-                </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === 'contact'}
+                    onClick={() => setMode('contact')}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 sm:px-5 ${mode === 'contact' ? 'bg-white text-brand-700 shadow-md' : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'}`}
+                  >
+                    <UserPlus aria-hidden="true" size={16} />
+                    Contact
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === 'event'}
+                    onClick={() => setMode('event')}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 sm:px-5 ${mode === 'event' ? 'bg-white text-brand-700 shadow-md' : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'}`}
+                  >
+                    <Calendar aria-hidden="true" size={16} />
+                    Event
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".vcf,.ics,text/vcard,text/calendar"
+                    className="sr-only"
+                    onChange={handleImport}
+                    tabIndex={-1}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-white hover:text-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                    title="Import an existing contact or calendar event"
+                  >
+                    <FileUp aria-hidden="true" size={14} />
+                    Import VCF or ICS
+                  </button>
+                  <a
+                    href="#qr-output"
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-brand-800 transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 lg:hidden"
+                  >
+                    <ArrowDown aria-hidden="true" size={14} />
+                    View QR
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -197,6 +289,7 @@ const App = () => {
               ['Does this tool upload my contact or event information?', 'No. The browser creates the QR code and downloadable files locally. The app has no account system, analytics, database, or server-side processing.'],
               ['What is the difference between VCF and ICS?', 'A VCF file stores contact information. An ICS file stores a calendar event. The QR code contains the same underlying data so compatible phone cameras and scanner apps can offer to save it.'],
               ['Which QR format should I download?', 'PNG works well for presentations, email, and social media. SVG stays sharp at any size and is the better choice for professionally printed materials.'],
+              ['Can I edit an existing contact or calendar file?', 'Yes. Import a VCF or ICS file and the generator will load commonly used contact and event fields locally in your browser. The file is never uploaded.'],
               ['Will every camera app behave the same way?', 'No. QR handling varies by device and scanner app. Always test the final code on both iOS and Android before printing or distributing it at scale.'],
             ].map(([question, answer]) => (
               <details key={question} className="group p-6 open:bg-slate-50">
@@ -224,6 +317,26 @@ const App = () => {
           </a>
         </div>
       </footer>
+
+      {notice && (
+        <div
+          className={`fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-lg items-center justify-between gap-4 rounded-xl border px-4 py-3 text-sm shadow-2xl ${notice.type === 'error' ? 'border-red-200 bg-red-50 text-red-950' : 'border-emerald-200 bg-emerald-50 text-emerald-950'}`}
+          role={notice.type === 'error' ? 'alert' : 'status'}
+          aria-live="polite"
+        >
+          <span className="font-medium">{notice.text}</span>
+          {lastCleared && (
+            <button
+              type="button"
+              onClick={handleUndoClear}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 py-2 font-bold text-emerald-900 shadow-sm transition hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/20"
+            >
+              <RotateCcw aria-hidden="true" size={15} />
+              Undo
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

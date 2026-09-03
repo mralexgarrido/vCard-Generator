@@ -15,18 +15,22 @@ A free, privacy-first web app for creating vCard contact QR codes and iCalendar 
 - **Private by design.** Contact and event details are processed entirely in the browser.
 - **No account or tracking.** The app has no sign-in, analytics, database, or server-side processing.
 - **Two practical workflows.** Create a contact card or a calendar event from one interface.
-- **Four download formats.** Export QR codes as PNG or print-ready SVG, plus the source VCF or ICS file.
+- **Import and edit.** Load common VCF contact files or ICS calendar files without uploading them.
+- **Flexible exports.** Export QR codes as PNG or print-ready SVG, download the source VCF or ICS file, or copy its contents.
+- **Safe QR customization.** Choose from high-contrast colors, three resilience levels, and multiple PNG sizes.
 - **Standards-friendly output.** Text is escaped, UTF-8 content lines are folded, and files use CRLF line endings.
-- **Time-zone aware events.** Local event times are converted to UTC for more consistent calendar imports.
+- **Time-zone aware events.** Local event times are converted to UTC, with quick durations and optional calendar reminders.
 - **Built for real distribution.** Downloads include a white quiet zone, payload-size guidance, and accessible validation.
 
 ## Use the app
 
 1. Choose **Contact** or **Event**.
-2. Enter the information people should save.
-3. Resolve any message beneath the QR preview.
-4. Test-scan the code with at least one iOS and one Android device.
-5. Download PNG for digital use, SVG for print, or VCF/ICS for direct file sharing.
+2. Enter the information people should save, or import an existing VCF or ICS file.
+3. For events, choose a quick duration and optional calendar reminder.
+4. Open **QR appearance and export** to select a safe color, resilience level, and PNG size.
+5. Resolve any message beneath the QR preview.
+6. Test-scan the code with at least one iOS and one Android device.
+7. Download PNG for digital use, SVG for print, VCF/ICS for direct file sharing, or copy the source data.
 
 QR recognition differs among camera and scanner apps. Always test the final asset at its intended printed size before distributing it widely.
 
@@ -66,6 +70,7 @@ This runs TypeScript checking, unit tests, and a production build.
 | QR rendering | `react-qr-code` |
 | Contact format | vCard 3.0 |
 | Event format | iCalendar 2.0 |
+| File import | Common UTF-8 VCF and ICS fields, parsed locally |
 | Hosting | GitHub Pages through GitHub Actions |
 | Data handling | Local browser memory only |
 

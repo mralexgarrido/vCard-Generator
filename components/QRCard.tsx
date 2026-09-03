@@ -3,13 +3,16 @@ import QRCode from 'react-qr-code';
 import {
   AlertTriangle,
   AlignLeft,
+  ArrowUp,
   CalendarCheck,
   CheckCircle2,
   Clock,
+  Copy,
   Download,
   FileDown,
   Image as ImageIcon,
   MapPin,
+  Palette,
   QrCode,
   ShieldCheck,
   Smartphone,
@@ -29,6 +32,28 @@ interface QRCardProps {
   data: ContactData | EventData;
   mode: QrMode;
 }
+
+type QrLevel = 'M' | 'Q' | 'H';
+
+const colorOptions = [
+  { name: 'Slate', value: '#0f172a' },
+  { name: 'Black', value: '#000000' },
+  { name: 'Navy', value: '#1e3a8a' },
+  { name: 'Forest', value: '#14532d' },
+  { name: 'Burgundy', value: '#7f1d1d' },
+];
+
+const pngSizeOptions = [
+  { label: '600 px', value: 600 },
+  { label: '1200 px', value: 1200 },
+  { label: '2400 px', value: 2400 },
+];
+
+const qrLevelByteLimits: Record<QrLevel, number> = {
+  M: MAX_QR_BYTES,
+  Q: 1_450,
+  H: 1_100,
+};
 
 const sanitizeFilename = (value: string, fallback: string) => {
   const filename = value
@@ -55,6 +80,9 @@ const downloadBlob = (blob: Blob, filename: string) => {
 const QRCard = ({ data, mode }: QRCardProps) => {
   const qrRef = useRef<HTMLDivElement>(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const [qrColor, setQrColor] = useState('#0f172a');
+  const [qrLevel, setQrLevel] = useState<QrLevel>('M');
+  const [pngSize, setPngSize] = useState(1200);
 
   const output = useMemo(() => {
     const errors = mode === 'contact'
@@ -82,7 +110,11 @@ const QRCard = ({ data, mode }: QRCardProps) => {
     }
   }, [data, mode]);
 
-  const isReady = output.errors.length === 0 && Boolean(output.payload);
+  const levelErrors = output.payload && output.errors.length === 0 && output.bytes > qrLevelByteLimits[qrLevel]
+    ? ['This payload is too large for the selected error correction. Choose Balanced or shorten the content.']
+    : [];
+  const displayErrors = [...output.errors, ...levelErrors];
+  const isReady = displayErrors.length === 0 && Boolean(output.payload);
   const isDense = isReady && output.bytes > QR_WARNING_BYTES;
 
   const basename = mode === 'contact'
@@ -142,8 +174,8 @@ const QRCard = ({ data, mode }: QRCardProps) => {
 
     image.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = 1200;
-      canvas.height = 1200;
+      canvas.width = pngSize;
+      canvas.height = pngSize;
       const context = canvas.getContext('2d');
 
       if (!context) {
@@ -176,6 +208,29 @@ const QRCard = ({ data, mode }: QRCardProps) => {
     const mime = isContact ? 'text/vcard;charset=utf-8' : 'text/calendar;charset=utf-8';
     downloadBlob(new Blob([output.payload], { type: mime }), `${basename}.${extension}`);
     announceDownload(`${isContact ? 'Contact' : 'Calendar'} file downloaded.`);
+  };
+
+  const copyData = async () => {
+    if (!isReady) return;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(output.payload);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = output.payload;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        const copied = document.execCommand('copy');
+        textArea.remove();
+        if (!copied) throw new Error('Copy is not supported.');
+      }
+      announceDownload(`${mode === 'contact' ? 'vCard' : 'Calendar'} data copied.`);
+    } catch {
+      announceDownload('Copy failed. Use the downloaded source file instead.');
+    }
   };
 
   const renderContactPreview = (contact: ContactData) => {
@@ -261,7 +316,14 @@ const QRCard = ({ data, mode }: QRCardProps) => {
   };
 
   return (
-    <aside className="space-y-7 lg:sticky lg:top-24" aria-label="Generated QR code and downloads">
+    <aside id="qr-output" className="scroll-mt-28 space-y-7 lg:sticky lg:top-24" aria-label="Generated QR code and downloads">
+      <a
+        href="#details-form"
+        className="inline-flex items-center gap-1.5 rounded-lg text-xs font-bold text-brand-800 underline decoration-brand-300 underline-offset-4 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 lg:hidden"
+      >
+        <ArrowUp aria-hidden="true" size={14} />
+        Back to fields
+      </a>
       {mode === 'contact'
         ? renderContactPreview(data as ContactData)
         : renderEventPreview(data as EventData)}
@@ -285,8 +347,8 @@ const QRCard = ({ data, mode }: QRCardProps) => {
             <QRCode
               value={output.payload}
               size={224}
-              level="M"
-              fgColor="#0f172a"
+              level={qrLevel}
+              fgColor={qrColor}
               bgColor="#ffffff"
               style={{ display: 'block', height: 'auto', maxWidth: '100%', width: '100%' }}
             />
@@ -301,14 +363,14 @@ const QRCard = ({ data, mode }: QRCardProps) => {
         </div>
 
         <div className="w-full" aria-live="polite">
-          {output.errors.length > 0 ? (
+          {displayErrors.length > 0 ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
               <p className="flex items-center gap-2 font-semibold">
                 <AlertTriangle aria-hidden="true" size={16} />
                 Almost ready
               </p>
               <ul className="mt-2 list-disc space-y-1 pl-5">
-                {output.errors.map((error) => <li key={error}>{error}</li>)}
+                {displayErrors.map((error) => <li key={error}>{error}</li>)}
               </ul>
             </div>
           ) : isDense ? (
@@ -332,6 +394,62 @@ const QRCard = ({ data, mode }: QRCardProps) => {
             </p>
           )}
         </div>
+
+        <details className="group w-full rounded-xl border border-slate-200 bg-slate-50/80">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-slate-800 marker:hidden focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20">
+            <span className="flex items-center gap-2">
+              <Palette aria-hidden="true" size={16} className="text-brand-700" />
+              QR appearance and export
+            </span>
+            <span aria-hidden="true" className="text-xs text-slate-500 transition group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="space-y-5 border-t border-slate-200 px-4 py-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-600">Color</p>
+              <div className="mt-2 flex flex-wrap gap-2" aria-label="QR code color">
+                {colorOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-label={`${option.name} QR color`}
+                    aria-pressed={qrColor === option.value}
+                    title={option.name}
+                    onClick={() => setQrColor(option.value)}
+                    className={`h-9 w-9 rounded-full border-4 shadow-sm transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/25 ${qrColor === option.value ? 'border-brand-500 scale-110' : 'border-white hover:scale-105'}`}
+                    style={{ backgroundColor: option.value }}
+                  />
+                ))}
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">Only high-contrast colors are offered to preserve scanning reliability.</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-2 text-xs font-bold uppercase tracking-wider text-slate-600">
+                Error correction
+                <select
+                  value={qrLevel}
+                  onChange={(event) => setQrLevel(event.target.value as QrLevel)}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold normal-case tracking-normal text-slate-800 outline-none focus-visible:border-brand-600 focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                >
+                  <option value="M">Balanced</option>
+                  <option value="Q">More resilient</option>
+                  <option value="H">Most resilient</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-2 text-xs font-bold uppercase tracking-wider text-slate-600">
+                PNG size
+                <select
+                  value={pngSize}
+                  onChange={(event) => setPngSize(Number(event.target.value))}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold normal-case tracking-normal text-slate-800 outline-none focus-visible:border-brand-600 focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                >
+                  {pngSizeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+            </div>
+            <p className="text-xs leading-relaxed text-slate-500">More resilience can help with minor damage or difficult printing, but it also makes the QR pattern denser.</p>
+          </div>
+        </details>
 
         <div className="grid w-full grid-cols-1 gap-3">
           <button
@@ -364,13 +482,26 @@ const QRCard = ({ data, mode }: QRCardProps) => {
               {mode === 'contact' ? 'Contact .vcf' : 'Calendar .ics'}
             </button>
           </div>
+          <button
+            type="button"
+            onClick={copyData}
+            disabled={!isReady}
+            className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-800 transition hover:border-brand-400 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          >
+            <Copy aria-hidden="true" size={17} />
+            Copy {mode === 'contact' ? 'vCard' : 'calendar'} data
+          </button>
         </div>
 
         <p className="flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
           <ShieldCheck aria-hidden="true" size={14} />
           Generated locally. Nothing is uploaded.
         </p>
-        <p className="sr-only" aria-live="polite">{statusMessage}</p>
+        {statusMessage && (
+          <p className="w-full rounded-lg bg-emerald-50 px-3 py-2 text-center text-xs font-semibold text-emerald-900" role="status" aria-live="polite">
+            {statusMessage}
+          </p>
+        )}
       </section>
     </aside>
   );

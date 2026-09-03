@@ -1,5 +1,5 @@
 import { ChangeEvent, useMemo } from 'react';
-import { AlignLeft, Calendar, Clock, Globe, Link, MapPin } from 'lucide-react';
+import { AlignLeft, Bell, Calendar, Clock, Globe, Link, MapPin, TimerReset } from 'lucide-react';
 import { EventData } from '../types';
 import { getSupportedTimezones } from '../utils/timezones';
 import { isValidWebUrl } from '../utils/url';
@@ -18,13 +18,60 @@ const toDateTime = (value: string, fallbackTime: string) => {
   return value.includes('T') ? value : `${value}T${fallbackTime}`;
 };
 
+const parseNeutralDateTime = (value: string) => {
+  const timestamp = Date.parse(`${value}:00Z`);
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
+
+const addMinutes = (value: string, minutes: number) => {
+  const timestamp = parseNeutralDateTime(value);
+  if (timestamp === null) return '';
+  return new Date(timestamp + minutes * 60_000).toISOString().slice(0, 16);
+};
+
+const getDurationMinutes = (start: string, end: string) => {
+  const startTimestamp = parseNeutralDateTime(start);
+  const endTimestamp = parseNeutralDateTime(end);
+  if (startTimestamp === null || endTimestamp === null || endTimestamp <= startTimestamp) return 60;
+  return Math.round((endTimestamp - startTimestamp) / 60_000);
+};
+
+const durationOptions = [
+  { label: '30 min', minutes: 30 },
+  { label: '1 hour', minutes: 60 },
+  { label: '2 hours', minutes: 120 },
+  { label: '3 hours', minutes: 180 },
+];
+
+const reminderOptions = [
+  { label: 'No reminder', value: '' },
+  { label: 'At start time', value: '0' },
+  { label: '5 minutes before', value: '5' },
+  { label: '15 minutes before', value: '15' },
+  { label: '30 minutes before', value: '30' },
+  { label: '1 hour before', value: '60' },
+  { label: '1 day before', value: '1440' },
+];
+
 const EventForm = ({ data, onChange }: EventFormProps) => {
   const timezones = useMemo(getSupportedTimezones, []);
 
   const handleTextChange = (
-    field: Exclude<keyof EventData, 'allDay'>,
+    field: Exclude<keyof EventData, 'allDay' | 'reminderMinutes'>,
   ) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     onChange(field, event.target.value);
+  };
+
+  const handleStartChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextStart = event.target.value;
+    const duration = getDurationMinutes(data.startTime, data.endTime);
+    onChange('startTime', nextStart);
+    onChange('endTime', addMinutes(nextStart, duration));
+  };
+
+  const setDuration = (minutes: number) => {
+    const nextEnd = addMinutes(data.startTime, minutes);
+    if (nextEnd) onChange('endTime', nextEnd);
   };
 
   const handleAllDayChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +164,7 @@ const EventForm = ({ data, onChange }: EventFormProps) => {
               type={data.allDay ? 'date' : 'datetime-local'}
               required
               value={data.startTime}
-              onChange={handleTextChange('startTime')}
+              onChange={data.allDay ? handleTextChange('startTime') : handleStartChange}
             />
             <InputField
               label={data.allDay ? 'End date' : 'End date and time'}
@@ -129,6 +176,47 @@ const EventForm = ({ data, onChange }: EventFormProps) => {
               onChange={handleTextChange('endTime')}
               hint={data.allDay ? 'The end date is inclusive.' : undefined}
             />
+          </div>
+
+          {!data.allDay && (
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600">
+                <TimerReset aria-hidden="true" size={14} className="text-slate-400" />
+                Quick duration
+              </p>
+              <div className="flex flex-wrap gap-2" aria-label="Set event duration">
+                {durationOptions.map((option) => {
+                  const selected = getDurationMinutes(data.startTime, data.endTime) === option.minutes;
+                  return (
+                    <button
+                      key={option.minutes}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setDuration(option.minutes)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 ${selected ? 'border-brand-600 bg-brand-50 text-brand-800' : 'border-slate-300 bg-white text-slate-700 hover:border-brand-300 hover:text-brand-800'}`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="group flex flex-col gap-2">
+            <label htmlFor="event-reminder" className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 transition-colors group-focus-within:text-brand-700">
+              <Bell aria-hidden="true" size={14} className="text-slate-400 transition-colors group-focus-within:text-brand-600" />
+              Calendar reminder
+            </label>
+            <select
+              id="event-reminder"
+              value={data.reminderMinutes ?? ''}
+              onChange={(event) => onChange('reminderMinutes', event.target.value === '' ? null : Number(event.target.value))}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 shadow-sm outline-none transition hover:border-brand-300 focus-visible:border-brand-600 focus-visible:ring-4 focus-visible:ring-brand-500/15"
+            >
+              {reminderOptions.map((option) => <option key={option.label} value={option.value}>{option.label}</option>)}
+            </select>
+            <p className="text-xs leading-relaxed text-slate-500">Included inside the downloaded ICS file and event QR code.</p>
           </div>
         </div>
       </fieldset>
