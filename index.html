@@ -1,90 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UMC vCard Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-              brand: {
-                50: '#fff3f0',
-                100: '#ffe4dd',
-                200: '#ffc9bd',
-                300: '#ff9f8a',
-                400: '#ff6d52',
-                500: '#f05023',
-                600: '#db3509',
-                700: '#b72706',
-                800: '#96220c',
-                900: '#7c200f',
-              }
-            },
-            animation: {
-              'float': 'float 6s ease-in-out infinite',
-            },
-            keyframes: {
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' },
-              }
-            }
-          },
+    <meta name="theme-color" content="#b72706" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="description" content="Create private, standards-friendly vCard and calendar event QR codes in your browser. Download PNG, SVG, VCF, and ICS files for free." />
+
+    <title>Free vCard & Event QR Code Generator</title>
+    <link rel="canonical" href="https://mralexgarrido.github.io/vCard-Generator/" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Free vCard & Event QR Code Generator" />
+    <meta property="og:description" content="Create contact and calendar QR codes privately in your browser. No account, tracking, or data upload." />
+    <meta property="og:url" content="https://mralexgarrido.github.io/vCard-Generator/" />
+    <meta property="og:image" content="https://mralexgarrido.github.io/vCard-Generator/social-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="vCard QR contact and event generator" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Free vCard & Event QR Code Generator" />
+    <meta name="twitter:description" content="Create contact and calendar QR codes privately in your browser." />
+    <meta name="twitter:image" content="https://mralexgarrido.github.io/vCard-Generator/social-card.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "vCard & Event QR Code Generator",
+        "url": "https://mralexgarrido.github.io/vCard-Generator/",
+        "description": "A free, private, browser-based generator for vCard contact QR codes and iCalendar event QR codes.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires a modern web browser with JavaScript enabled.",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
         },
+        "featureList": [
+          "vCard 3.0 contact QR codes",
+          "iCalendar 2.0 event QR codes",
+          "PNG and SVG QR downloads",
+          "VCF and ICS file downloads",
+          "Local browser processing"
+        ]
       }
     </script>
-    <style>
-      /* Custom scrollbar for cleaner look */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Does this tool upload my contact or event information?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. The browser creates the QR code and downloadable files locally. The app has no account system, analytics, database, or server-side processing."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is the difference between VCF and ICS?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "A VCF file stores contact information. An ICS file stores a calendar event. The QR code contains the same underlying data."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which QR format should I download?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "PNG works well for presentations, email, and social media. SVG stays sharp at any size and is better for professionally printed materials."
+            }
+          }
+        ]
       }
-      ::-webkit-scrollbar-track {
-        background: transparent; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #cbd5e1; 
-        border-radius: 4px;
-        border: 2px solid transparent;
-        background-clip: content-box;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background-color: #94a3b8; 
-      }
-      
-      body {
-        background-color: #f8fafc;
-        background-image: 
-          radial-gradient(at 0% 0%, hsla(12,100%,96%,1) 0, transparent 50%), 
-          radial-gradient(at 100% 0%, hsla(28,100%,96%,1) 0, transparent 50%), 
-          radial-gradient(at 100% 100%, hsla(12,100%,96%,1) 0, transparent 50%), 
-          radial-gradient(at 0% 100%, hsla(28,100%,96%,1) 0, transparent 50%);
-        background-attachment: fixed;
-      }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "react/": "https://esm.sh/react@^19.2.1/",
-    "react": "https://esm.sh/react@^19.2.1",
-    "lucide-react": "https://esm.sh/lucide-react@^0.560.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.1/",
-    "react-qr-code": "https://esm.sh/react-qr-code@^2.0.18"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
-  <body class="text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
+    </script>
+  </head>
+  <body>
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <noscript>This generator needs JavaScript to create QR codes locally in your browser.</noscript>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

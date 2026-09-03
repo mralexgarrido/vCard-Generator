@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">vCard and Event QR Code Generator</title>
+  <desc id="description">A professional orange and navy card promoting a private browser-based QR generator.</desc>
+  <defs>
+    <linearGradient id="background" x1="72" y1="30" x2="1120" y2="610" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff3f0"/>
+      <stop offset="0.5" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#e0f2fe"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="780" y1="100" x2="1080" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f05023"/>
+      <stop offset="1" stop-color="#96220c"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#background)"/>
+  <circle cx="86" cy="74" r="180" fill="#ffc9bd" opacity="0.42"/>
+  <circle cx="1150" cy="580" r="220" fill="#bae6fd" opacity="0.5"/>
+
+  <g font-family="Inter, Segoe UI, Arial, sans-serif">
+    <g transform="translate(88 92)">
+      <rect width="68" height="68" rx="17" fill="url(#brand)"/>
+      <g fill="#fff">
+        <rect x="14" y="14" width="17" height="17" rx="2"/>
+        <rect x="38" y="14" width="17" height="17" rx="2"/>
+        <rect x="14" y="38" width="17" height="17" rx="2"/>
+        <rect x="38" y="38" width="7" height="7" rx="1"/>
+        <rect x="48" y="38" width="7" height="17" rx="1"/>
+        <rect x="38" y="48" width="7" height="7" rx="1"/>
+      </g>
+      <text x="88" y="34" fill="#0f172a" font-size="34" font-weight="800">vCard <tspan fill="#b72706">QR</tspan></text>
+      <text x="88" y="58" fill="#64748b" font-size="16" font-weight="600" letter-spacing="1">CONTACT AND EVENT GENERATOR</text>
+    </g>
+
+    <text x="88" y="238" fill="#0f172a" font-size="54" font-weight="900">
+      <tspan x="88" dy="0">Create a QR code</tspan>
+      <tspan x="88" dy="62">people can actually</tspan>
+      <tspan x="88" dy="62">use.</tspan>
+    </text>
+    <text x="90" y="456" fill="#475569" font-size="22" font-weight="500">
+      Private, standards-friendly, and entirely browser based.
+    </text>
+
+    <g transform="translate(90 510)" fill="#334155" font-size="18" font-weight="700">
+      <circle cx="9" cy="9" r="9" fill="#059669"/>
+      <path d="M5 9l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="30" y="16">VCF &amp; ICS</text>
+
+      <circle cx="179" cy="9" r="9" fill="#db3509"/>
+      <path d="M175 9l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="200" y="16">PNG &amp; SVG</text>
+
+      <circle cx="370" cy="9" r="9" fill="#0284c7"/>
+      <path d="M366 9l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="391" y="16">No data upload</text>
+    </g>
+
+    <g transform="translate(770 90)" filter="url(#shadow)">
+      <rect width="342" height="450" rx="34" fill="#fff"/>
+      <rect x="34" y="34" width="274" height="274" rx="24" fill="#fff" stroke="#e2e8f0" stroke-width="2"/>
+      <g transform="translate(60 60)" fill="#0f172a">
+        <rect width="64" height="64"/>
+        <rect x="162" width="64" height="64"/>
+        <rect y="162" width="64" height="64"/>
+        <rect x="82" width="22" height="22"/>
+        <rect x="116" y="12" width="26" height="22"/>
+        <rect x="82" y="38" width="22" height="40"/>
+        <rect x="116" y="56" width="22" height="22"/>
+        <rect x="150" y="82" width="42" height="22"/>
+        <rect x="204" y="82" width="22" height="40"/>
+        <rect x="82" y="100" width="22" height="42"/>
+        <rect x="116" y="116" width="54" height="22"/>
+        <rect x="188" y="126" width="38" height="22"/>
+        <rect x="82" y="162" width="22" height="64"/>
+        <rect x="116" y="162" width="22" height="22"/>
+        <rect x="150" y="154" width="22" height="44"/>
+        <rect x="184" y="170" width="42" height="22"/>
+        <rect x="116" y="204" width="54" height="22"/>
+        <rect x="188" y="204" width="38" height="22"/>
+      </g>
+      <g fill="#fff">
+        <rect x="70" y="70" width="44" height="44"/>
+        <rect x="232" y="70" width="44" height="44"/>
+        <rect x="70" y="232" width="44" height="44"/>
+      </g>
+      <g fill="#b72706">
+        <rect x="80" y="80" width="24" height="24"/>
+        <rect x="242" y="80" width="24" height="24"/>
+        <rect x="80" y="242" width="24" height="24"/>
+      </g>
+      <rect x="56" y="342" width="230" height="52" rx="14" fill="url(#brand)"/>
+      <text x="171" y="375" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">DOWNLOAD QR</text>
+      <text x="171" y="424" text-anchor="middle" fill="#64748b" font-size="15" font-weight="600">Free and open source</text>
+    </g>
+  </g>
+</svg>

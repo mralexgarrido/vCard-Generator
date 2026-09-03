@@ -1,0 +1,27 @@
+# vCard & Event QR Code Generator
+
+> A free, open-source browser tool for creating vCard contact QR codes and iCalendar event QR codes.
+
+## Primary URL
+
+- https://mralexgarrido.github.io/vCard-Generator/
+
+## Capabilities
+
+- Creates vCard 3.0 contact data
+- Creates iCalendar 2.0 timed and all-day event data
+- Downloads QR codes as PNG and SVG
+- Downloads source data as VCF and ICS
+- Converts local timed events to UTC
+- Validates required fields, URLs, time zones, event duration, and QR payload size
+
+## Privacy
+
+All entries are processed in browser memory. The application has no account system, analytics, database, cookies, persistent browser storage, or server-side processing.
+
+## Source and documentation
+
+- Repository: https://github.com/mralexgarrido/vCard-Generator
+- License: MIT
+
+QR behavior varies by device and scanner application. Test a final QR code on intended devices before large-scale printing or distribution.
