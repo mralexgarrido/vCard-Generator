@@ -11,6 +11,7 @@ const event = (overrides: Partial<EventData> = {}): EventData => ({
   url: 'example.com/register',
   timezone: 'America/Chicago',
   allDay: false,
+  reminderMinutes: 15,
   uid: 'stable-test-id@vcard-qr-generator',
   createdAt: '2026-09-03T20:00:00.000Z',
   ...overrides,
@@ -28,7 +29,16 @@ describe('generateVCalendarString', () => {
     expect(output).toContain('LOCATION:Main Hall\\, Room 2\r\n');
     expect(output).toContain('DESCRIPTION:Bring ideas\\;\\ncoffee is provided.\r\n');
     expect(output).toContain('URL:https://example.com/register\r\n');
+    expect(output).toContain('BEGIN:VALARM\r\n');
+    expect(output).toContain('TRIGGER:-PT15M\r\n');
+    expect(output).toContain('DESCRIPTION:Reminder: Community Meetup\r\n');
     expect(output.endsWith('END:VCALENDAR\r\n')).toBe(true);
+  });
+
+  it('omits an alarm when no reminder is selected', () => {
+    const output = generateVCalendarString(event({ reminderMinutes: null }));
+
+    expect(output).not.toContain('BEGIN:VALARM');
   });
 
   it('uses an exclusive end date for inclusive all-day input', () => {

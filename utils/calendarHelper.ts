@@ -120,6 +120,12 @@ const formatTimestamp = (value: string) => {
   return Number.isNaN(date.getTime()) ? formatUtc(new Date()) : formatUtc(date);
 };
 
+const formatReminderTrigger = (minutes: number) => {
+  if (minutes === 0) return 'PT0M';
+  if (minutes % (24 * 60) === 0) return `-P${minutes / (24 * 60)}D`;
+  return `-PT${minutes}M`;
+};
+
 export const generateVCalendarString = (data: EventData): string => {
   const lines = [
     'BEGIN:VCALENDAR',
@@ -146,6 +152,13 @@ export const generateVCalendarString = (data: EventData): string => {
   if (data.url.trim()) lines.push(`URL:${sanitizeSingleLine(normalizeUrl(data.url))}`);
 
   lines.push('STATUS:CONFIRMED');
+  if (data.reminderMinutes !== null) {
+    lines.push('BEGIN:VALARM');
+    lines.push(`TRIGGER:${formatReminderTrigger(data.reminderMinutes)}`);
+    lines.push('ACTION:DISPLAY');
+    lines.push(`DESCRIPTION:${escapeText(`Reminder: ${data.title.trim()}`)}`);
+    lines.push('END:VALARM');
+  }
   lines.push('END:VEVENT');
   lines.push('END:VCALENDAR');
 

@@ -10,6 +10,8 @@ describe('App', () => {
 
     expect(html).toContain('Create a QR code');
     expect(html).toContain('Contact card');
+    expect(html).toContain('Import VCF or ICS');
+    expect(html).toContain('QR appearance and export');
     expect(html).toContain('Generated locally. Nothing is uploaded.');
   });
 
@@ -37,5 +39,8 @@ describe('App', () => {
     expect(html).toContain('aria-label="QR code containing a contact card"');
     expect(html).toContain('<svg');
     expect(html).toContain('Download QR PNG');
+    expect(html.replaceAll('<!-- -->', '')).toContain('Copy vCard data');
+    expect(html).toContain('Error correction');
+    expect(html).toContain('PNG size');
   });
 });
