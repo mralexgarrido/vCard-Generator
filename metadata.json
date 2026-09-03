@@ -1,0 +1,6 @@
+{
+  "name": "UMC vCard Generator",
+  "description": "Create official UMC smart contact cards. Powered by Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
