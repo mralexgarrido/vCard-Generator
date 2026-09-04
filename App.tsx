@@ -5,6 +5,7 @@ import {
   ChevronDown,
   FileUp,
   Github,
+  HardDrive,
   LockKeyhole,
   QrCode,
   RotateCcw,
@@ -23,6 +24,11 @@ import {
   QrMode,
 } from './types';
 import { parseGeneratorFile } from './utils/importHelper';
+import {
+  clearWorkspaceDraft,
+  loadWorkspaceDraft,
+  saveWorkspaceDraft,
+} from './utils/storageHelper';
 
 type ClearedData =
   | { mode: 'contact'; data: ContactData }
@@ -33,13 +39,38 @@ interface Notice {
   text: string;
 }
 
+type StorageState = 'empty' | 'saving' | 'saved' | 'unavailable';
+
+const formatSavedAt = (value: string) => {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(value));
+  } catch {
+    return '';
+  }
+};
+
 const App = () => {
-  const [mode, setMode] = useState<QrMode>('contact');
-  const [contactData, setContactData] = useState<ContactData>(createInitialContactData);
-  const [eventData, setEventData] = useState<EventData>(createInitialEventData);
+  const [initialDraft] = useState(loadWorkspaceDraft);
+  const [mode, setMode] = useState<QrMode>(initialDraft?.mode ?? 'contact');
+  const [contactData, setContactData] = useState<ContactData>(
+    () => initialDraft?.contact ?? createInitialContactData(),
+  );
+  const [eventData, setEventData] = useState<EventData>(
+    () => initialDraft?.event ?? createInitialEventData(),
+  );
   const [lastCleared, setLastCleared] = useState<ClearedData | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [shouldPersist, setShouldPersist] = useState(Boolean(initialDraft));
+  const [storageState, setStorageState] = useState<StorageState>(
+    initialDraft ? 'saved' : 'empty',
+  );
+  const [savedAt, setSavedAt] = useState<string | null>(initialDraft?.savedAt ?? null);
+  const [confirmForget, setConfirmForget] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasMounted = useRef(false);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -50,15 +81,60 @@ const App = () => {
     return () => window.clearTimeout(timeout);
   }, [lastCleared, notice]);
 
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return undefined;
+    }
+    if (!shouldPersist) return undefined;
+
+    setStorageState('saving');
+    const workspace = { mode, contact: contactData, event: eventData };
+    const persistDraft = (updateStatus: boolean) => {
+      const timestamp = saveWorkspaceDraft(workspace);
+      if (!updateStatus) return;
+      if (timestamp) {
+        setSavedAt(timestamp);
+        setStorageState('saved');
+      } else {
+        setStorageState('unavailable');
+      }
+    };
+
+    const timeout = window.setTimeout(() => persistDraft(true), 350);
+    const handlePageHide = () => persistDraft(false);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') persistDraft(false);
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener('pagehide', handlePageHide);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [contactData, eventData, mode, shouldPersist]);
+
   const handleContactChange = <K extends keyof ContactData>(field: K, value: ContactData[K]) => {
+    setShouldPersist(true);
     setContactData((previous) => ({ ...previous, [field]: value }));
   };
 
   const handleEventChange = <K extends keyof EventData>(field: K, value: EventData[K]) => {
+    setShouldPersist(true);
     setEventData((previous) => ({ ...previous, [field]: value }));
   };
 
+  const handleModeChange = (nextMode: QrMode) => {
+    setShouldPersist(true);
+    setMode(nextMode);
+  };
+
   const handleClear = () => {
+    setShouldPersist(true);
+    setConfirmForget(false);
     if (mode === 'contact') {
       setLastCleared({ mode, data: { ...contactData } });
       setContactData(createInitialContactData());
@@ -71,6 +147,7 @@ const App = () => {
 
   const handleUndoClear = () => {
     if (!lastCleared) return;
+    setShouldPersist(true);
     if (lastCleared.mode === 'contact') setContactData(lastCleared.data);
     else setEventData(lastCleared.data);
     setMode(lastCleared.mode);
@@ -90,6 +167,7 @@ const App = () => {
 
     try {
       const imported = parseGeneratorFile(await file.text());
+      setShouldPersist(true);
       if (imported.mode === 'contact' && imported.contact) setContactData(imported.contact);
       if (imported.mode === 'event' && imported.event) setEventData(imported.event);
       setMode(imported.mode);
@@ -105,6 +183,32 @@ const App = () => {
       });
     }
   };
+
+  const handleForgetSavedData = () => {
+    const removed = clearWorkspaceDraft();
+    setMode('contact');
+    setContactData(createInitialContactData());
+    setEventData(createInitialEventData());
+    setLastCleared(null);
+    setShouldPersist(false);
+    setSavedAt(null);
+    setStorageState(removed ? 'empty' : 'unavailable');
+    setConfirmForget(false);
+    setNotice({
+      type: removed ? 'success' : 'error',
+      text: removed
+        ? 'All contact and event information was removed from this browser.'
+        : 'The fields were cleared, but browser storage could not be accessed.',
+    });
+  };
+
+  const storageStatus = storageState === 'saving'
+    ? 'Saving changes...'
+    : storageState === 'saved'
+      ? `Saved on this browser${savedAt ? ` · ${formatSavedAt(savedAt)}` : ''}`
+      : storageState === 'unavailable'
+        ? 'Browser autosave is unavailable'
+        : 'Autosave is ready';
 
   return (
     <div className="min-h-screen overflow-x-hidden">
@@ -152,11 +256,12 @@ const App = () => {
             <button
               type="button"
               onClick={handleClear}
-              className="rounded-xl p-2.5 text-slate-500 transition hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500/20"
+              className="inline-flex items-center gap-2 rounded-xl px-3 py-2.5 text-slate-500 transition hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500/20"
               aria-label={`Clear ${mode} fields`}
-              title="Clear fields"
+              title={`Clear ${mode} fields`}
             >
               <Trash2 aria-hidden="true" size={20} />
+              <span className="hidden text-sm font-bold sm:inline">Clear current</span>
             </button>
           </div>
         </div>
@@ -172,7 +277,7 @@ const App = () => {
             Turn contact details into a vCard or event details into a calendar file. Download a print-ready QR code without creating an account or uploading personal information.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-slate-600">
-            <span className="flex items-center gap-2"><ShieldCheck aria-hidden="true" size={17} className="text-emerald-700" />No data collection</span>
+            <span className="flex items-center gap-2"><ShieldCheck aria-hidden="true" size={17} className="text-emerald-700" />No data upload</span>
             <span className="flex items-center gap-2"><QrCode aria-hidden="true" size={17} className="text-brand-700" />PNG and SVG</span>
             <span className="flex items-center gap-2"><Calendar aria-hidden="true" size={17} className="text-sky-700" />VCF and ICS files</span>
           </div>
@@ -200,7 +305,7 @@ const App = () => {
                     type="button"
                     role="tab"
                     aria-selected={mode === 'contact'}
-                    onClick={() => setMode('contact')}
+                    onClick={() => handleModeChange('contact')}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 sm:px-5 ${mode === 'contact' ? 'bg-white text-brand-700 shadow-md' : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'}`}
                   >
                     <UserPlus aria-hidden="true" size={16} />
@@ -210,7 +315,7 @@ const App = () => {
                     type="button"
                     role="tab"
                     aria-selected={mode === 'event'}
-                    onClick={() => setMode('event')}
+                    onClick={() => handleModeChange('event')}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 sm:px-5 ${mode === 'event' ? 'bg-white text-brand-700 shadow-md' : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'}`}
                   >
                     <Calendar aria-hidden="true" size={16} />
@@ -246,6 +351,49 @@ const App = () => {
                   </a>
                 </div>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <HardDrive aria-hidden="true" className="mt-0.5 shrink-0 text-emerald-700" size={18} />
+                <div>
+                  <p className="text-sm font-bold text-emerald-950" role="status" aria-live="polite">
+                    {storageStatus}
+                  </p>
+                  <p className="mt-0.5 text-xs leading-5 text-emerald-900/80">
+                    Contact and event drafts stay in this browser only. Nothing is uploaded.
+                  </p>
+                </div>
+              </div>
+
+              {confirmForget ? (
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end" role="group" aria-label="Confirm removal of saved data">
+                  <span className="w-full text-xs font-semibold text-red-900 sm:w-auto">Remove both drafts?</span>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmForget(false)}
+                    className="rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-slate-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/20"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleForgetSavedData}
+                    className="rounded-lg bg-red-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-red-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500/25"
+                  >
+                    Forget everything
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmForget(true)}
+                  disabled={!shouldPersist && storageState === 'empty'}
+                  className="shrink-0 self-start rounded-lg px-3 py-2 text-xs font-bold text-emerald-900 underline decoration-emerald-400 underline-offset-4 transition hover:bg-white hover:text-red-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:self-center"
+                >
+                  Forget saved data
+                </button>
+              )}
             </div>
 
             <div className="rounded-2xl border border-white/70 bg-white/90 p-6 shadow-xl shadow-slate-200/40 backdrop-blur-md sm:p-10">
@@ -287,7 +435,8 @@ const App = () => {
           <h2 id="faq-heading" className="text-center text-3xl font-bold tracking-tight text-slate-950">Frequently asked questions</h2>
           <div className="mt-8 divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
             {[
-              ['Does this tool upload my contact or event information?', 'No. The browser creates the QR code and downloadable files locally. The app has no account system, analytics, database, or server-side processing.'],
+              ['Does this tool upload my contact or event information?', 'No. The browser creates the QR code and downloadable files locally. The app has no account system, analytics, cloud database, or server-side processing.'],
+              ['How does browser autosave work?', 'The app automatically stores your latest contact and event drafts in this browser so you can return after closing the page. The information is not synced to other browsers or devices. Use “Forget saved data” before leaving a shared computer.'],
               ['What is the difference between VCF and ICS?', 'A VCF file stores contact information. An ICS file stores a calendar event. The QR code contains the same underlying data so compatible phone cameras and scanner apps can offer to save it.'],
               ['Which QR format should I download?', 'PNG works well for presentations, email, and social media. SVG stays sharp at any size and is the better choice for professionally printed materials.'],
               ['Can I edit an existing contact or calendar file?', 'Yes. Import a VCF or ICS file and the generator will load commonly used contact and event fields locally in your browser. The file is never uploaded.'],

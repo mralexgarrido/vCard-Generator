@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented here.
 
+## [1.2.0] - 2026-09-04
+
+### Added
+
+- Automatic browser-local saving for contact and event drafts
+- Restoration of the latest drafts and selected generator mode after returning
+- Immediate draft preservation when the page is hidden or closed
+- Visible saving status and timestamp
+- Confirmed **Forget saved data** action that clears both forms and browser storage
+- Validation and failure handling for unavailable, malformed, or unsupported stored data
+
+### Changed
+
+- Privacy guidance now explains browser-local persistence and shared-computer cleanup
+
 ## [1.1.0] - 2026-09-03
 
 ### Added
