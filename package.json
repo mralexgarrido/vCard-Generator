@@ -1,6 +1,6 @@
 {
   "name": "vcard-qr-generator",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A private, browser-based vCard and calendar event QR code generator.",
   "author": "Alex Garrido",
   "homepage": "https://mralexgarrido.github.io/vCard-Generator/",
