@@ -16,6 +16,7 @@ A free, privacy-first web app for creating vCard contact QR codes and iCalendar 
 - **No account or tracking.** The app has no sign-in, analytics, database, or server-side processing.
 - **Two practical workflows.** Create a contact card or a calendar event from one interface.
 - **Import and edit.** Load common VCF contact files or ICS calendar files without uploading them.
+- **Automatic draft recovery.** Return to the latest contact and event drafts after closing the tab or browser.
 - **Flexible exports.** Export QR codes as PNG or print-ready SVG, download the source VCF or ICS file, or copy its contents.
 - **Safe QR customization.** Choose from high-contrast colors, three resilience levels, and multiple PNG sizes.
 - **Standards-friendly output.** Text is escaped, UTF-8 content lines are folded, and files use CRLF line endings.
@@ -33,6 +34,12 @@ A free, privacy-first web app for creating vCard contact QR codes and iCalendar 
 7. Download PNG for digital use, SVG for print, VCF/ICS for direct file sharing, or copy the source data.
 
 QR recognition differs among camera and scanner apps. Always test the final asset at its intended printed size before distributing it widely.
+
+### Browser storage and privacy
+
+The generator automatically stores the latest contact draft, event draft, selected workflow, and save time in the browser's local storage. This allows accidental tab closures and later visits to recover the most recent work without an account. Changes are saved after a short pause and again when the page is hidden or closed.
+
+Saved drafts are scoped to this website in the current browser profile. They are not uploaded, synced to another browser or device, or available to the project maintainer. On a shared computer, use **Forget saved data** to reset both forms and remove the stored record. Clearing browser site data also removes the draft.
 
 ## Run locally
 
@@ -72,9 +79,10 @@ This runs TypeScript checking, unit tests, and a production build.
 | Event format | iCalendar 2.0 |
 | File import | Common UTF-8 VCF and ICS fields, parsed locally |
 | Hosting | GitHub Pages through GitHub Actions |
-| Data handling | Local browser memory only |
+| Draft recovery | Versioned browser `localStorage` with validated restoration |
+| Data handling | Local browser processing and storage only |
 
-The project intentionally has no backend, cookies, local storage, telemetry, or runtime API dependency.
+The project intentionally has no backend, cookies, telemetry, cloud database, or runtime API dependency.
 
 ## Standards references
 
