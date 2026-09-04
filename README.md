@@ -39,7 +39,7 @@ QR recognition differs among camera and scanner apps. Always test the final asse
 
 The generator automatically stores the latest contact draft, event draft, selected workflow, and save time in the browser's local storage. This allows accidental tab closures and later visits to recover the most recent work without an account. Changes are saved after a short pause and again when the page is hidden or closed.
 
-Saved drafts are scoped to this website in the current browser profile. They are not uploaded, synced to another browser or device, or available to the project maintainer. On a shared computer, use **Forget saved data** to reset both forms and remove the stored record. Clearing browser site data also removes the draft.
+Saved drafts are scoped to this site's browser origin and the current browser profile. They are not uploaded, synced to another browser or device, or available to the project maintainer. On a shared computer, use **Forget saved data** to reset both forms and remove the stored record. Clearing browser site data also removes the draft.
 
 ## Run locally
 
