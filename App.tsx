@@ -277,7 +277,7 @@ const App = () => {
             Turn contact details into a vCard or event details into a calendar file. Download a print-ready QR code without creating an account or uploading personal information.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-slate-600">
-            <span className="flex items-center gap-2"><ShieldCheck aria-hidden="true" size={17} className="text-emerald-700" />No data collection</span>
+            <span className="flex items-center gap-2"><ShieldCheck aria-hidden="true" size={17} className="text-emerald-700" />No data upload</span>
             <span className="flex items-center gap-2"><QrCode aria-hidden="true" size={17} className="text-brand-700" />PNG and SVG</span>
             <span className="flex items-center gap-2"><Calendar aria-hidden="true" size={17} className="text-sky-700" />VCF and ICS files</span>
           </div>
