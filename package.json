@@ -27,7 +27,7 @@
     "check": "npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
-    "lucide-react": "^0.560.0",
+    "lucide-react": "^1.39.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-qr-code": "^2.0.18"
