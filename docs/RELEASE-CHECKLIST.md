@@ -1,14 +1,18 @@
-# Connection-studio upgrade: release checklist
+# Release checklist
+
+Use this checklist for the exact proposed commit. A previous feature branch or historic rollback base is not automatically the correct reference for a new release. The launch-specific history is preserved in [Project updates](PROJECT-UPDATES.md).
 
 ## Scope and approval
 
-This branch builds on `feat/browser-draft-autosave` (PR #10, head `cde3f25d7f6b0620191ae628a8c33e51d940a909`). Production remains on `main` until explicitly approved. The new PR includes that autosave foundation; do not independently merge divergent versions of the two App.tsx changes.
+Record the purpose, changed files, current main commit, and known-good deployment. Keep unrelated dependency, hosting, storage-schema, and interface changes separate. Obtain explicit maintainer approval before merging, deploying, or publishing a release/tag.
 
-No domains, DNS, hosting settings, credentials, dependencies, production permissions, or backend services are changed. The CI extension uploads a review artifact; it does not deploy it.
+CI uploads a review artifact; it does not deploy that artifact as a preview site. Changes merged to main can trigger the existing Pages production workflow, including documentation-only changes.
 
 ## Automated checks
 
-Run `npm run check` and verify the CI run for the exact review commit. CI must complete the production-subpath build and portable artifact build. Existing serialization/import/storage tests must remain green alongside the new experience tests.
+Run `npm ci` and `npm run check` with the declared runtime and committed lockfile. Verify the CI run for the exact review commit. CI must complete the production-subpath build and portable artifact build. Existing serialization/import/storage tests must remain green alongside experience tests.
+
+Record checks actually performed. Automated checks do not prove that every phone will scan a printed code or that a native-share operation reached its recipient.
 
 ## Browser smoke tests before production
 
@@ -31,10 +35,14 @@ Run `npm run check` and verify the CI run for the exact review commit. CI must c
 - [ ] Share this tool sends only the canonical generator URL, never draft data or a payload in the URL.
 - [ ] Reduced-motion preference suppresses milestone animations. No automatic audio, confetti, motion, or forced extra data collection.
 
-## Product decisions
+## Product and release communication
 
 The engagement loop is useful output, not artificial points: enter details, validate, export/share, save a reusable copy, recommend the free tool. The progress indicator records actions, not a scan-quality certification. The shelf is bounded and local. QR density is a practical warning, not a guarantee of camera compatibility.
 
-## Rollback
+Describe the user benefit, fixes, known limitations, and any effect on saved drafts or exports. Use the actual commit and publication date. Do not invent prior releases or assign a new version solely for cosmetic presentation.
 
-Production base before this work: `26f2f77f597638edf39884a7ca3ecbae6dd13534`. Before merge, keep production untouched. After an approved deployment, revert the new feature commit through a normal pull request and the existing Pages workflow. Do not force-push or delete users' local storage. The legacy workspace key stays compatible; the additional shelf key is ignored by the older app.
+## Deployment and rollback
+
+After an approved deployment, verify the intended Pages commit, application entry point, critical assets, contact/event exports, and browser storage behavior. Keep the previous known-good commit recorded.
+
+For a regression, revert the responsible change through a normal pull request and the existing Pages workflow. Do not force-push or delete users' local storage. Storage compatibility must be checked against the specific rollback version, not assumed from an earlier upgrade's notes.
