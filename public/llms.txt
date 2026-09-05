@@ -1,27 +1,18 @@
 # vCard & Event QR Code Generator
 
-> A free, open-source browser tool for creating vCard contact QR codes and iCalendar event QR codes.
+> Free, browser-based contact cards and calendar event invitations by Alex Garrido.
 
-## Primary URL
-
+## App
 - https://mralexgarrido.github.io/vCard-Generator/
 
 ## Capabilities
+Create vCard 3.0 contact files and iCalendar 2.0 event files. Generate local QR codes, export PNG/SVG, present an enlarged QR, print a card, or create a designed contact-card/event-invitation PNG. Import common fields from one VCF/ICS entry. Use native file sharing where supported, with a download fallback.
 
-- Creates vCard 3.0 contact data
-- Creates iCalendar 2.0 timed and all-day event data
-- Downloads QR codes as PNG and SVG
-- Downloads source data as VCF and ICS
-- Converts local timed events to UTC
-- Validates required fields, URLs, time zones, event duration, and QR payload size
+Contact and event drafts autosave in the current browser. A local shelf holds up to 12 named copies, with rename, remove, and use-as-template controls. Event templates get fresh calendar identities. No accounts, tracking, server-side storage, API keys, or subscriptions.
 
-## Privacy
+## Limitations
+Browser storage is not encrypted by the app, synced, or a permanent backup. Static QR codes do not update after printing. Camera and calendar compatibility vary. Recurrence, attendees, attachments, hosted contact pages, cloud sync, and scan analytics are not provided. Features on an unmerged branch are not yet live.
 
-All entries are processed in browser memory. The application has no account system, analytics, database, cookies, persistent browser storage, or server-side processing.
-
-## Source and documentation
-
-- Repository: https://github.com/mralexgarrido/vCard-Generator
-- License: MIT
-
-QR behavior varies by device and scanner application. Test a final QR code on intended devices before large-scale printing or distribution.
+## Source and license
+- https://github.com/mralexgarrido/vCard-Generator
+- MIT License

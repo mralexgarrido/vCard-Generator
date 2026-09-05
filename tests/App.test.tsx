@@ -13,6 +13,10 @@ describe('App', () => {
     expect(html).toContain('Import VCF or ICS');
     expect(html).toContain('QR appearance and export');
     expect(html).toContain('Generated locally. Nothing is uploaded.');
+    expect(html).toContain('Autosave is ready');
+    expect(html).toContain('Contact and event drafts stay in this browser only.');
+    expect(html).toContain('Forget saved data');
+    expect(html).toContain('Clear current');
   });
 
   it('renders an encoded SVG for a valid contact payload', () => {
