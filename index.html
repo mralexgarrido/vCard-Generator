@@ -5,54 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#b72706" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <meta name="description" content="Create private, standards-friendly vCard and calendar event QR codes in your browser. Download PNG, SVG, VCF, and ICS files for free." />
-
+    <meta name="description" content="Create free contact cards and calendar invitations with QR codes. Save browser drafts, share VCF/ICS files, and export designed cards, PNG, or SVG." />
     <title>Free vCard & Event QR Code Generator</title>
     <link rel="canonical" href="https://mralexgarrido.github.io/vCard-Generator/" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="./site.webmanifest" />
-
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Free vCard & Event QR Code Generator" />
-    <meta property="og:description" content="Create contact and calendar QR codes privately in your browser. No account, tracking, or data upload." />
+    <meta property="og:description" content="Make a contact card or event invitation worth sharing. Free, browser-based, with draft recovery and no account required." />
     <meta property="og:url" content="https://mralexgarrido.github.io/vCard-Generator/" />
     <meta property="og:image" content="https://mralexgarrido.github.io/vCard-Generator/social-card.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="vCard QR contact and event generator" />
-
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Free vCard & Event QR Code Generator" />
-    <meta name="twitter:description" content="Create contact and calendar QR codes privately in your browser." />
+    <meta name="twitter:description" content="Contact cards and event invitations. Free, browser-based, and made to share." />
     <meta name="twitter:image" content="https://mralexgarrido.github.io/vCard-Generator/social-card.png" />
-
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "name": "vCard & Event QR Code Generator",
         "url": "https://mralexgarrido.github.io/vCard-Generator/",
-        "description": "A free, private, browser-based generator for vCard contact QR codes and iCalendar event QR codes.",
+        "description": "A free browser-based studio for vCard contact cards, iCalendar event invitations, and downloadable QR artwork.",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Any",
         "browserRequirements": "Requires a modern web browser with JavaScript enabled.",
         "isAccessibleForFree": true,
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "featureList": [
-          "vCard 3.0 contact QR codes",
-          "iCalendar 2.0 event QR codes",
-          "PNG and SVG QR downloads",
-          "VCF and ICS file downloads",
-          "Local VCF and ICS file import",
-          "QR color and export-size controls",
-          "Calendar reminders and quick event durations",
-          "Automatic local draft recovery",
-          "Local browser processing"
-        ]
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": ["vCard 3.0 contact QR codes", "iCalendar 2.0 event QR codes", "PNG and SVG QR downloads", "VCF and ICS file downloads", "Local VCF and ICS file import", "High-contrast QR color controls", "Calendar reminders and event presets", "Automatic local draft recovery", "Named local saved cards and events", "Designed card PNG exports", "Enlarged QR presentation and print layout", "Native file sharing where supported"]
       }
     </script>
     <script type="application/ld+json">
@@ -60,46 +42,13 @@
         "@context": "https://schema.org",
         "@type": "FAQPage",
         "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "Does this tool upload my contact or event information?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "No. The browser creates the QR code and downloadable files locally. The app has no account system, analytics, database, or server-side processing."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "What is the difference between VCF and ICS?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "A VCF file stores contact information. An ICS file stores a calendar event. The QR code contains the same underlying data."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Which QR format should I download?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "PNG works well for presentations, email, and social media. SVG stays sharp at any size and is better for professionally printed materials."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Can I edit an existing contact or calendar file?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Yes. Import a VCF or ICS file and the generator will load commonly used contact and event fields locally in the browser. The file is never uploaded."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "How does browser autosave work?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "The app stores the latest contact and event drafts in this browser so they can be restored after the page closes. The information is never uploaded or synced, and the Forget saved data control removes it."
-            }
-          }
+          { "@type": "Question", "name": "Does this tool upload my contact or event information?", "acceptedAnswer": { "@type": "Answer", "text": "No. The browser generates your files and QR codes locally. Drafts and saved copies stay in this browser. The app has no account system, tracking, or server-side storage. Choosing Share sends the selected file through your device sharing menu." } },
+          { "@type": "Question", "name": "Will my work still be here when I return?", "acceptedAnswer": { "@type": "Answer", "text": "Your current contact and event drafts save automatically in this browser. Your saved shelf holds up to 12 named copies. This is not a cloud backup: private browsing, clearing site data, changing devices, or browser cleanup can remove it. Export VCF or ICS files for a portable backup." } },
+          { "@type": "Question", "name": "What should I use on the same phone?", "acceptedAnswer": { "@type": "Answer", "text": "Download or share the Contact .vcf or Calendar .ics file, then open it with a compatible contacts or calendar app. QR codes are most useful when another device is scanning your screen or printed card." } },
+          { "@type": "Question", "name": "Will the QR code expire or change after I print it?", "acceptedAnswer": { "@type": "Answer", "text": "These static codes embed the contact or event data directly, so this app adds no expiration or subscription. Printed codes do not update when you edit a card. Generate and distribute a new code after changing details." } },
+          { "@type": "Question", "name": "Can I bring an existing card or event?", "acceptedAnswer": { "@type": "Answer", "text": "Import VCF or ICS files to edit commonly used fields locally. Only a single contact or event is loaded. Recurrence rules, guests, attachments, and advanced vendor-specific fields are not supported; keep your original file when those details matter." } },
+          { "@type": "Question", "name": "Which export should I choose?", "acceptedAnswer": { "@type": "Answer", "text": "Use VCF or ICS to save directly on a phone. Use QR PNG in slides or social posts, SVG for sharp print artwork, and the designed-card PNG when you want the name and details beside the code. Print card opens a clean print layout. Test the final code on actual devices before distributing it." } },
+          { "@type": "Question", "name": "How do I remove my information from a shared computer?", "acceptedAnswer": { "@type": "Answer", "text": "Open Browser memory and choose Forget saved data. It removes both drafts and every saved copy belonging to this generator. It does not delete files already downloaded or messages already shared. This app does not encrypt browser storage." } }
         ]
       }
     </script>

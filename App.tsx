@@ -104,9 +104,9 @@ export default function App() {
   }
   async function shareTool() {
     try {
-      if (navigator.share) await navigator.share({ title: 'Free vCard & Event QR Generator', text: 'Make a contact card or event invitation. Free, browser-based, and no account needed.', url: TOOL_URL });
+      if (typeof navigator.share === 'function') await navigator.share({ title: 'Free vCard & Event QR Generator', text: 'Make a contact card or event invitation. Free, browser-based, and no account needed.', url: TOOL_URL });
       else await copyText(TOOL_URL);
-      setNotice({ text: navigator.share ? 'Generator link handed to your device sharing menu. No contact details included.' : 'Generator link copied. No contact or event details are included.' });
+      setNotice({ text: typeof navigator.share === 'function' ? 'Generator link handed to your device sharing menu. No contact details included.' : 'Generator link copied. No contact or event details are included.' });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       setNotice({ text: 'Sharing is unavailable here. You can copy the generator address from your browser.', error: true });
