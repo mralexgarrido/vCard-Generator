@@ -12,15 +12,20 @@ export function applyEventPreset(data: EventData, id: string): EventData {
   const preset = EVENT_PRESETS.find((item) => item.id === id);
   if (!preset) return data;
   const start = data.startTime.length === 10 ? `${data.startTime}T09:00` : data.startTime;
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(start)) return data;
   const timestamp = Date.parse(`${start}:00Z`);
-  if (!Number.isFinite(timestamp)) return data;
+  if (!Number.isFinite(timestamp) || new Date(timestamp).toISOString().slice(0, 16) !== start) return data;
   return { ...data, allDay: false, startTime: start, endTime: new Date(timestamp + preset.minutes * 60000).toISOString().slice(0, 16), reminderMinutes: preset.reminder };
 }
 
 export function getEventSummary(data: EventData, now = Date.now()) {
   try {
-    const startDate = new Date(`${data.startTime.slice(0, 10)}T12:00:00Z`);
-    const endDate = new Date(`${data.endTime.slice(0, 10)}T12:00:00Z`);
+    const startDay = data.startTime.slice(0, 10);
+    const endDay = data.endTime.slice(0, 10);
+    if (![startDay, endDay].every((day) => /^\d{4}-\d{2}-\d{2}$/.test(day))) return null;
+    const startDate = new Date(`${startDay}T12:00:00Z`);
+    const endDate = new Date(`${endDay}T12:00:00Z`);
+    if (startDate.toISOString().slice(0, 10) !== startDay || endDate.toISOString().slice(0, 10) !== endDay) return null;
     const formatDate = (date: Date) => new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(date);
     const dates = data.startTime.slice(0, 10) === data.endTime.slice(0, 10) ? formatDate(startDate) : `${formatDate(startDate)} to ${formatDate(endDate)}`;
     if (data.allDay) {
