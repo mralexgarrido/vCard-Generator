@@ -6,9 +6,7 @@
 
 A free, browser-first studio for contact cards and calendar invitations. No accounts, subscriptions, tracking, backend, or runtime API keys.
 
-[Open the live generator](https://mralexgarrido.github.io/vCard-Generator/)
-
-> Features described on a feature branch are not live until that branch is approved, merged, and deployed.
+[Open the live generator](https://mralexgarrido.github.io/vCard-Generator/) · [Report an issue](https://github.com/mralexgarrido/vCard-Generator/issues) · [Project updates](docs/PROJECT-UPDATES.md) · [Release checklist](docs/RELEASE-CHECKLIST.md)
 
 ![vCard and event QR code generator](public/social-card.png)
 
@@ -52,11 +50,11 @@ Browser storage is not encrypted by this app. Storage is scoped to the browser p
 - Static QR codes contain the data directly. They have no app-imposed expiration, but they do not update after printing. Regenerate a code when details change.
 - Camera recognition, file handling, printing, and native sharing vary by browser and operating system. Test on real iOS and Android devices. A browser share promise is not proof of delivery to a recipient.
 - Long text may be shortened on the designed image to preserve its layout; the underlying QR and source file keep the full entered data.
-- No hosted contact URLs, analytics, cloud syncing, recurring events, or backend services are added by this upgrade.
+- Hosted contact URLs, analytics, cloud syncing, recurring events, and backend services are outside the current feature set.
 
 ## Run locally
 
-Requires Node.js 20 or newer and npm. Use the committed lockfile.
+Requires Node.js 20 or newer and npm. Use the committed lockfile and the runtime specified by `.nvmrc` when reproducing CI.
 
 ```bash
 git clone https://github.com/mralexgarrido/vCard-Generator.git
@@ -74,6 +72,8 @@ npm run check
 This runs TypeScript checking, unit tests, and a production build. Tests cover formats and import behavior, storage and cleanup, large source-file exports, event presets and timezones, safe SVG text, and server-rendered UI contracts.
 
 ### Review a pull request without deploying
+
+Features described on a feature branch are not live until that branch is approved, merged, and deployed.
 
 CI verifies the GitHub Pages subpath build and then creates a relative-path `vcard-review-build` artifact. In **Actions > CI > the run > Artifacts**, download and unzip it, then serve the folder locally:
 
@@ -96,15 +96,19 @@ Open `http://localhost:8080`. Do not double-click the HTML file; module loading 
 | Drafts and saved shelf | Versioned, app-prefixed localStorage keys |
 | Hosting | Existing GitHub Pages via GitHub Actions |
 
-No runtime dependencies were added for this experience upgrade. The prior full-page blur effects were removed. QR rendering is separated from urgent typing updates, exports are disabled while the preview is stale, and the event editor and artwork generator are split into separate chunks. These are implementation improvements, not claims of a measured speedup.
+QR rendering is separated from urgent typing updates, exports are disabled while the preview is stale, and the event editor and artwork generator are split into separate chunks. These implementation choices are not claims of a measured speedup.
+
+## Project updates
+
+See [Project updates](docs/PROJECT-UPDATES.md) for the reviewed upgrade history, release-note guidance, and repository presentation handoff. [GitHub Releases](https://github.com/mralexgarrido/vCard-Generator/releases) contains announcements when published. A package version, merged feature, and successful deployment are related but distinct records.
 
 ## Deployment and rollback
 
-The production workflow remains `.github/workflows/pages.yml`. It runs after a commit reaches `main` or an explicit manual run. There is no Cloudflare configuration or migration in this change.
+The production workflow is `.github/workflows/pages.yml`. It runs after a commit reaches `main` or an explicit manual run. The application uses GitHub Pages; no hosting migration is part of this documentation update.
 
 For a fork, open **Settings > Pages > Build and deployment**, and choose **GitHub Actions**. The workflow derives the repository subpath automatically.
 
-Before a production merge, complete [the release checklist](docs/RELEASE-CHECKLIST.md). Revert the approved feature commit to roll back the interface; the old version ignores the new library key. Do not clear users' local data as part of rollback.
+Before a production merge, complete [the release checklist](docs/RELEASE-CHECKLIST.md) and record the current known-good commit. Roll back through a normal revert pull request and the existing Pages workflow. Do not clear users' local data as part of rollback. Historical upgrade-specific rollback notes are preserved in [Project updates](docs/PROJECT-UPDATES.md).
 
 ## Standards and implementation references
 
